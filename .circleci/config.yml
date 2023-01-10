@@ -1,0 +1,142 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5.0.0
+
+executors:
+  base-executor:
+    docker:
+      - image: cimg/node:16.16
+
+commands:
+  restore-cache:
+    steps:
+      - restore_cache:
+          keys:
+            - v1-deps-{{ checksum "yarn.lock" }}
+            - v1-deps-
+  save-cache:
+    steps:
+      - save_cache:
+          key: v1-deps-{{ checksum "yarn.lock" }}
+          paths:
+            - node_modules
+  install-vercel:
+    steps:
+      - run:
+          description: 'Install Vercel CLI'
+          command: yarn add vercel
+  build-vercel:
+    steps:
+      - run:
+          description: 'Build Vercel Artifacts'
+          command: yarn run vercel build --token=$VERCEL_TOKEN
+  build-vercel-prod:
+    steps:
+      - run:
+          description: 'Build Vercel Artifacts'
+          command: yarn run vercel build --prod --token=$VERCEL_TOKEN
+  pull-vercel-preview:
+    steps:
+      - run:
+          description: 'Pull Vercel'
+          command: yarn run vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+  pull-vercel-production:
+    steps:
+      - run:
+          description: 'Pull Vercel Production'
+          command: yarn run vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+  deploy-preview:
+    steps:
+      - run:
+          description: 'Deploy Vercel Artifacts'
+          command: yarn run vercel deploy --prebuilt  --token=$VERCEL_TOKEN
+  deploy-production:
+    steps:
+      - run:
+          description: 'Deploy Vercel Artifacts to Production'
+          command: yarn run vercel deploy --prebuilt  --prod --token=$VERCEL_TOKEN
+  persist-vercel:
+    steps:
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - .vercel/*
+  attach-vercel:
+    steps:
+      - attach_workspace:
+          at: ./
+
+jobs:
+  build-preview:
+    executor: base-executor
+    steps:
+      - checkout
+      - restore-cache
+      - install-vercel
+      - pull-vercel-preview
+      - build-vercel
+      - persist-vercel
+      - save-cache
+  build-prod:
+    executor: base-executor
+    steps:
+      - checkout
+      - restore-cache
+      - install-vercel
+      - pull-vercel-production
+      - build-vercel-prod
+      - persist-vercel
+      - save-cache
+  deploy-preview:
+    executor: base-executor
+    steps:
+      - checkout
+      - attach-vercel
+      - restore-cache
+      - deploy-preview
+  deploy-production:
+    executor: base-executor
+    steps:
+      - checkout
+      - attach-vercel
+      - restore-cache
+      - deploy-production
+
+workflows:
+  version: 2
+  build-preview-workflow:
+    jobs:
+      - build-preview:
+          context: Vercel
+          filters:
+            branches:
+              ignore: main
+      - deploy-preview:
+          context: Vercel
+          filters:
+            branches:
+              ignore: main
+          requires:
+            - build-preview
+  build-production-workflow:
+    jobs:
+      - build-prod:
+          context: Vercel
+          filters:
+            branches:
+              only: main
+      - hold:
+          filters:
+            branches:
+              only: main
+          type: approval
+          requires:
+            - build-prod
+      - deploy-production:
+          context: Vercel
+          filters:
+            branches:
+              only: main
+          requires:
+            - hold
