@@ -1,6 +1,4 @@
 import React, {useState} from 'react';
-import styled from 'styled-components';
-
 export type CounterProps = {
 	initialValue?: number;
 };
@@ -17,40 +15,14 @@ export const Counter = ({initialValue = 0}: CounterProps) => {
 	};
 
 	return (
-		<CounterWrapper>
-			<span>Current count is: {count}</span>
-			<ButtonsWrapper>
-				<CounterButton onClick={onIncrement}>Increment</CounterButton>
-				<CounterButton onClick={onReset}>Reset</CounterButton>
-			</ButtonsWrapper>
-		</CounterWrapper>
+		<div className='flex flex-col items-center'>
+			<span className='text-xl font-medium mt-2'>Current count is: {count}</span>
+			<div className='flex flex-initial w-64 justify-between items-stretch mt-2'>
+				<button className='bg-indigo-300 px-2.5 py-2 rounded-md text-slate-800 font-medium hover:cursor-pointer hover:bg-indigo-400 hover:scale-105 ease-in-out duration-200'
+					onClick={onIncrement}>Increment</button>
+				<button className='bg-rose-300 px-2.5 py-2 rounded-md text-slate-800 font-medium hover:cursor-pointer hover:bg-rose-400 hover:scale-105 ease-in-out duration-200'
+					onClick={onReset}>Reset</button>
+			</div>
+		</div>
 	);
 };
-
-const CounterWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-`;
-
-const ButtonsWrapper = styled.div`
-    display: flex;
-    justify-content: space-evenly;
-`;
-
-const CounterButton = styled.button`
-  padding: 10px 15px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 1.1rem;
-  font-weight: 500;
-  background-color: transparent;
-  outline: none;
-  border: 1px solid white;
-  border-radius: 4px;
-  transition: all 0.2s ease-in-out;
-
-  &:hover {
-    cursor: pointer;
-    color: rgba(255, 255, 255, 1);
-  }
-`;
